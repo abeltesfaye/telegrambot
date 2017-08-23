@@ -6,7 +6,7 @@ include_once('../conf/config.inc.php');
 define('BOT_TOKEN', $config['TG_TOKEN']);
 define('API_URL', 'https://api.telegram.org/bot' . BOT_TOKEN . '/');
 //ETMDB Constants
-define("ETMDB_API_ACCESS_TOKEN", "Bearer " . $config['ETMDB_TOKEN'] . "");
+define("ETMDB_API_ACCESS_TOKEN", "Bearer " . $config['ETMDB_TOKEN']);
 
 // Some more constants
 define("ETMDB_SEARCH_MOVIES", 0);
@@ -17,20 +17,12 @@ define("ETMDB_SEARCH_FILM_COMPANY", 3);
 function getAccessToken() {
 	
 	if(checkIfAccessTokenIsStillVaild()){
-	error_log("***************************\r\n\r\n 
-	Access Token is vaild: ".getAccessTokenFromFile()."
-	\r\n\r\n***************************");
 		return getAccessTokenFromFile();
 	} else {
 		//Access token has expired we have to create a new one
-			error_log("***************************\r\n\r\n 
-	Access Token is NOT vaild
-	\r\n\r\n***************************");
 		if(getAccessTokenFromFile() == "" && getRefreshTokenFromFile() == ""){
 			//We do not have previously generated access token and refresh token we have to create a new one
-			error_log("***************************\r\n\r\n 
-	Creating a new Access token
-	\r\n\r\n***************************");	
+		
 			$accCurl = curl_init();
 			curl_setopt($accCurl, CURLOPT_URL, "https://".$config['CLIENT_ID'].":".$config['CLIENT_SECRET']."@etmdb.com/api/oauth/token/");
 			curl_setopt($accCurl, CURLOPT_POST, true);
@@ -44,19 +36,12 @@ function getAccessToken() {
 			$returnedJsonForNewToken = curl_exec($accCurl);
 			$DecodedJSONForNewToken = json_decode($returnedJsonForNewToken, true);
 			curl_close($accCurl);
-			error_log('New Access Token : ' . $DecodedJSONForNewToken['access_token']);
-			error_log('New Refresh Token : ' . $DecodedJSONForNewToken['refresh_token']);
-		
+
 			writeAccessTokenToFile($DecodedJSONForNewToken['access_token'] , $DecodedJSONForNewToken['refresh_token']);
 			
 			return $DecodedJSONForNewToken['access_token'];
 		}else{
-			//We have previously generated access token and refresh token... We can use the refresh token to make new one
-				error_log("***************************\r\n\r\n 
-	Using previous refresh token
-	\r\n\r\n***************************");
-			
-			
+			//We have previously generated access token and refresh token... We can use the refresh token to make new one		
 			$accCurl = curl_init();
 			curl_setopt($accCurl, CURLOPT_URL, "https://etmdb.com/api/oauth/token/");
 			curl_setopt($accCurl, CURLOPT_POST, true);
@@ -70,9 +55,7 @@ function getAccessToken() {
 			$returnedJsonForRefreshing = curl_exec($accCurl);
 			$DecodedJSONFromRefreshing = json_decode($returnedJsonForRefreshing, true);
 			curl_close($accCurl);
-			error_log('New Access Token : ' . $DecodedJSONFromRefreshing['access_token']);
-			error_log('New Refresh Token : ' . $DecodedJSONFromRefreshing['refresh_token']);
-		
+
 			writeAccessTokenToFile($DecodedJSONFromRefreshing['access_token'] , $DecodedJSONFromRefreshing['refresh_token']);
 		
 			return $DecodedJSONFromRefreshing['access_token'];
@@ -85,7 +68,6 @@ function getAccessTokenFromFile() {
 	$accessTokenStoreFile = fopen("accessT0k3n.tok" , "r");
 	$accessT0k3n = fread($accessTokenStoreFile , 500000);
 	
-	error_log("########TOKENS: $accessT0k3n");
 	list($accTok , $refTok) = explode(":" , $accessT0k3n);
 	fclose($accessTokenStoreFile);
 	return $accTok;
@@ -126,12 +108,9 @@ curl_setopt($CheckerCurl, CURLOPT_NOBODY  , true);
 	
 curl_close($CheckerCurl);
 	
-	error_log("HTTPCode: ".$HTTPCode);
 	if($HTTPCode == 200) {
 		return true;
 	} else{
-	
-	error_log("Authorization UNSUCCESSFUL: CODE $HTTPCode");
 		return false;
 	}	
 }
@@ -172,27 +151,16 @@ function Search($SearchTerm, $WhereToSearch)
 		'Authorization: Bearer '.getAccessToken()
 	);
 	
-	error_log("############Searching with access token: ".getAccessToken());
-	
-	
-	
-	
 	$SearchCurl = curl_init();
 	curl_setopt($SearchCurl, CURLOPT_URL, $SearchURL);
 	curl_setopt($SearchCurl, CURLOPT_HTTPHEADER, $header);
 	curl_setopt($SearchCurl, CURLOPT_RETURNTRANSFER, true);
 	$FoundSearchResultsJSON = curl_exec($SearchCurl);
 
-	
-	error_log("FoundSearchResultsJSON $FoundSearchResultsJSON");
-	
-	
 	// Don't forget to tidy up
-
 	curl_close($SearchCurl);
 
 	// Result is a JSON file
-
 	return $FoundSearchResultsJSON;
 }
 
@@ -200,11 +168,9 @@ function SendTextMessage($ChatID, $TextMessageToSend, $ParseMode, $ReplyMarkup)
 {
 
 	// Dont forget to URL encode the Message
-
 	$TextMessageToSend = urlencode($TextMessageToSend);
 
 	// Prepare URL
-
 	$TGSendMessageURL = "";
 	if ($ReplyMarkup != null) {
 		$TGSendMessageURL = API_URL . "SendMessage?chat_id=" . $ChatID . "&text=" . $TextMessageToSend . "&parse_mode=" . $ParseMode . "&reply_markup=" . $ReplyMarkup;
